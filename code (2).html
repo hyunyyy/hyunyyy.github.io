@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기말고사 통합 학습 계획표</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+        :root {
+            --primary-color: #3498db;
+            --light-gray: #f4f7f9;
+            --dark-gray: #7f8c8d;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--light-gray);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 20px 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        /* 탭 네비게이션 */
+        .tabs-nav {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 25px;
+        }
+        .tabs-nav button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1.1em;
+            font-weight: 500;
+            color: var(--dark-gray);
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .tabs-nav button.active {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        .tabs-nav button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        /* 탭 콘텐츠 */
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 요일별 계획 (아코디언) */
+        .day-block {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .day-header {
+            background-color: #f8f9fa;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .day-header h2 { margin: 0; font-size: 1.2em; }
+        .day-header .total-study-time {
+            font-size: 0.9em;
+            color: var(--dark-gray);
+            margin-left: 15px;
+            font-weight: normal;
+        }
+        .day-header .arrow { font-weight: bold; transition: transform 0.3s ease; }
+        .day-header.active .arrow { transform: rotate(90deg); }
+        .day-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
+        .plan-table { width: 100%; border-collapse: collapse; }
+        .plan-table th, .plan-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .plan-table th { background-color: #f1f3f5; }
+        .subject-link {
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .subject-link:hover { text-decoration: underline; }
+        .d-day { background-color: #e74c3c; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.8em; margin-left: 10px; }
+
+        /* 과목별 목표 */
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .subject-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #fdfdfd;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .subject-card.highlight {
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+            transform: translateY(-5px);
+        }
+        .subject-card h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .subject-card h3 .total-hours {
+            font-size: 0.8em;
+            color: var(--dark-gray);
+            font-weight: 500;
+        }
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .task-list li {
+            padding: 12px 5px;
+            border-bottom: 1px dashed #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-list li:last-child {
+            border-bottom: none;
+        }
+        .task-item {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .task-item.completed {
+            text-decoration: line-through;
+            color: #bbb;
+        }
+        .task-time {
+            font-size: 0.9em;
+            color: #888;
+            background-color: var(--light-gray);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        /* 진행률 바 */
+        .progress-container {
+            width: 100%;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+            height: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.5s ease-in-out;
+        }
+        .progress-text {
+            font-size: 0.85em;
+            color: var(--dark-gray);
+            text-align: right;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>기말고사 통합 학습 계획표</h1>
+
+        <nav class="tabs-nav">
+            <button class="tab-button active" data-tab="daily-plan">요일별 계획</button>
+            <button class="tab-button" data-tab="subject-plan">과목별 목표</button>
+        </nav>
+
+        <!-- 요일별 계획 콘텐츠 -->
+        <section id="daily-plan" class="tab-content active">
+            <div class="day-block">
+                <div class="day-header"><h2>6월 22일 (일)</h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>수특 복습 (Level 2)</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>2.5h</td><td>수능특강 1회독 시작</td></tr>
+                            <tr><td><a href="#subject-hwajak" class="subject-link">화법과 작문</a></td><td>2h</td><td>기출 풀이로 감 잡기</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="day-block">
+                <div class="day-header"><h2>6월 23일 (월)</h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                         <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>수특 복습 (Level 3)</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>2.5h</td><td>수능특강 1회독 계속</td></tr>
+                            <tr><td><a href="#subject-chem" class="subject-link">화학Ⅱ</a></td><td>2h</td><td>핵심 개념 훑기</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 누락된 날짜 추가 -->
+            <div class="day-block">
+                <div class="day-header"><h2>6월 24일 (화)</h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>내신 기출 풀이 시작</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>2h</td><td>수능특강 1회독 마무리</td></tr>
+                            <tr><td><a href="#subject-hwajak" class="subject-link">화법과 작문</a></td><td>1.5h</td><td>약점 유형 집중 공략</td></tr>
+                            <tr><td><a href="#subject-chem" class="subject-link">화학Ⅱ</a></td><td>1.5h</td><td>기출문제 풀며 유형 파악</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="day-block">
+                <div class="day-header"><h2>6월 25일 (수)</h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>내신 기출 완료, 킬러 심화</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>2h</td><td>수능특강 2회독 시작</td></tr>
+                            <tr><td><a href="#subject-hwajak" class="subject-link">화법과 작문</a></td><td>1.5h</td><td>최종 정리 및 오답 복습</td></tr>
+                            <tr><td><a href="#subject-chem" class="subject-link">화학Ⅱ</a></td><td>1.5h</td><td>기출 오답 분석 및 암기</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="day-block">
+                <div class="day-header"><h2>6월 26일 (목)<span class="d-day">D-1</span></h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>킬러 집중 훈련 (백지 복습)</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>2h</td><td>변형 문제 풀이 시작</td></tr>
+                            <tr><td>화작/화학Ⅱ</td><td>2h+</td><td>최종 요약/오답노트 무한 반복</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="day-block">
+                <div class="day-header"><h2>6월 27일 (금)</h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>킬러 완료, 실전 기출 워밍업</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>3h</td><td>변형 문제 집중 풀이</td></tr>
+                            <tr><td><a href="#subject-bio" class="subject-link">생명Ⅱ</a></td><td>3h</td><td>(시험 후) 벼락치기 시작</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="day-block">
+                <div class="day-header"><h2>6월 28일 (토)</h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>실전 기출 집중 풀이</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>3h</td><td>수능특강 2회독 및 오답</td></tr>
+                            <tr><td><a href="#subject-bio" class="subject-link">생명Ⅱ</a></td><td>2h</td><td>기출문제 풀이 및 오답 정리</td></tr>
+                            <tr><td><a href="#subject-physics" class="subject-link">물리Ⅱ</a></td><td>2h</td><td>벼락치기 시작, 핵심 개념</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- 누락된 날짜 추가 완료 -->
+
+            <div class="day-block">
+                <div class="day-header"><h2>6월 29일 (일)<span class="d-day">D-1</span></h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-mizok" class="subject-link">미적분</a></td><td>5h</td><td>최종 모의고사 및 총정리</td></tr>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>2h</td><td>취약 유형 및 단어 최종 암기</td></tr>
+                            <tr><td><a href="#subject-bio" class="subject-link">생명Ⅱ</a></td><td>3h</td><td>최종정리, '50점 넘기기' 집중</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="day-block">
+                <div class="day-header"><h2>6월 30일 (월)<span class="d-day">D-1</span></h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-english" class="subject-link">영어</a></td><td>5h+</td><td>(시험 후) 최종 정리, 변형문제 오답</td></tr>
+                            <tr><td><a href="#subject-physics" class="subject-link">물리Ⅱ</a></td><td>5h+</td><td>(시험 후) 기출 풀이 및 최종 암기</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="day-block">
+                <div class="day-header"><h2>7월 1일 (화)<span class="d-day">D-1</span></h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                        <thead><tr><th>과목</th><th>시간</th><th>학습 내용</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="#subject-giha" class="subject-link">기하</a></td><td>8h+</td><td>(시험 후) All-in, 개념부터 기출까지</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+             <div class="day-block">
+                <div class="day-header"><h2>7월 2일 (수)</h2><span class="total-study-time"></span><div class="arrow">▶</div></div>
+                <div class="day-content">
+                    <table class="plan-table">
+                         <thead><tr><th>과목</th><th>-</th><th>-</th></tr></thead>
+                        <tbody>
+                            <tr><td>기하</td><td>시험</td><td>마지막까지 최선을 다해 좋은 결과 얻기!</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 과목별 목표 콘텐츠 -->
+        <section id="subject-plan" class="tab-content">
+            <div class="subject-grid">
+                <div class="subject-card" id="subject-mizok">
+                    <h3>미적분 <span class="total-hours">총 40h</span></h3>
+                    <ul class="task-list">
+                        <li><span class="task-item">수특 복습</span><span class="task-time">~10h</span></li>
+                        <li><span class="task-item">킬러 외우기</span><span class="task-time">~4h</span></li>
+                        <li><span class="task-item">내신기출 풀이</span><span class="task-time">~10h</span></li>
+                        <li><span class="task-item">실제 기출 풀이</span><span class="task-time">~5h</span></li>
+                        <li><span class="task-item">오답 복습</span><span class="task-time">~5h</span></li>
+                    </ul>
+                </div>
+                <div class="subject-card" id="subject-english">
+                    <h3>영어 <span class="total-hours">총 25h+</span></h3>
+                    <ul class="task-list">
+                        <li><span class="task-item">수특 1회독</span><span class="task-time">~6h</span></li>
+                        <li><span class="task-item">수특 2회독 이상</span><span class="task-time">~9h</span></li>
+                        <li><span class="task-item">단어 암기</span><span class="task-time">수시로</span></li>
+                        <li><span class="task-item">변형문제 풀이</span><span class="task-time">~4h</span></li>
+                        <li><span class="task-item">최종 오답 정리</span><span class="task-time">~6h</span></li>
+                    </ul>
+                </div>
+                <div class="subject-card" id="subject-hwajak">
+                    <h3>화법과 작문 <span class="total-hours">총 8h</span></h3>
+                    <ul class="task-list">
+                        <li><span class="task-item">기출 풀이 및 감 유지</span><span class="task-time">~5h</span></li>
+                        <li><span class="task-item">약점 유형 분석</span><span class="task-time">~2h</span></li>
+                        <li><span class="task-item">최종 정리</span><span class="task-time">~1h</span></li>
+                    </ul>
+                </div>
+                <div class="subject-card" id="subject-physics">
+                    <h3>물리학Ⅱ <span class="total-hours">총 7h+</span></h3>
+                    <ul class="task-list">
+                        <li><span class="task-item">핵심 개념 회독</span><span class="task-time">~2h</span></li>
+                        <li><span class="task-item">필수 유형 문제풀이</span><span class="task-time">~5h</span></li>
+                    </ul>
+                </div>
+                <div class="subject-card" id="subject-chem">
+                    <h3>화학Ⅱ <span class="total-hours">총 7h+</span></h3>
+                    <ul class="task-list">
+                        <li><span class="task-item">핵심 개념 회독</span><span class="task-time">~2h</span></li>
+                        <li><span class="task-item">기출 문제풀이 (50점+)</span><span class="task-time">~5h</span></li>
+                    </ul>
+                </div>
+                <div class="subject-card" id="subject-bio">
+                    <h3>생명과학Ⅱ <span class="total-hours">총 8h</span></h3>
+                    <ul class="task-list">
+                        <li><span class="task-item">핵심 개념 회독</span><span class="task-time">~2h</span></li>
+                        <li><span class="task-item">자료해석 및 문제풀이</span><span class="task-time">~6h</span></li>
+                    </ul>
+                </div>
+                <div class="subject-card" id="subject-giha">
+                    <h3>기하 <span class="total-hours">총 8h+</span></h3>
+                    <ul class="task-list">
+                        <li><span class="task-item">핵심 개념 회독</span><span class="task-time">~2h</span></li>
+                        <li><span class="task-item">정의 활용 문제풀이</span><span class="task-time">~6h</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 탭 기능
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.dataset.tab;
+
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    tabContents.forEach(content => {
+                        if (content.id === targetTab) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            // 아코디언 기능
+            const dayHeaders = document.querySelectorAll('.day-header');
+            dayHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    header.classList.toggle('active');
+                    const content = header.nextElementSibling;
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }
+                });
+            });
+
+            // 과목별 목표 완료 기능
+            const taskItems = document.querySelectorAll('.task-item');
+            taskItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    item.classList.toggle('completed');
+                });
+            });
+
+            // 요일별 계획 -> 과목별 목표 링크 기능
+            const subjectLinks = document.querySelectorAll('.subject-link');
+            subjectLinks.forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    
+                    // 1. 과목별 목표 탭으로 전환
+                    document.querySelector('.tab-button[data-tab="subject-plan"]').click();
+                    
+                    // 2. 해당 과목 카드로 스크롤
+                    const targetId = link.getAttribute('href');
+                    const targetCard = document.querySelector(targetId);
+                    
+                    if (targetCard) {
+                        // 3. 하이라이트 효과 추가
+                        targetCard.classList.add('highlight');
+                        
+                        // 스크롤이 끝난 후 하이라이트 제거
+                        setTimeout(() => {
+                            targetCard.classList.remove('highlight');
+                        }, 1500); // 1.5초 후 하이라이트 제거
+                        
+                        // 부드럽게 스크롤
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            });
+
+            // 각 요일별 총 공부 시간 계산 및 표시
+            function calculateAndDisplayTotalStudyTime() {
+                dayHeaders.forEach(header => {
+                    const dayContent = header.nextElementSibling;
+                    const timeCells = dayContent.querySelectorAll('.plan-table tbody td:nth-child(2)');
+                    let totalHours = 0;
+
+                    timeCells.forEach(cell => {
+                        const timeText = cell.textContent.trim();
+                        let hours = 0;
+
+                        if (timeText.includes('h')) {
+                            const numericPart = parseFloat(timeText.replace('h', ''));
+                            if (!isNaN(numericPart)) {
+                                hours = numericPart;
+                            }
+                        } else if (timeText.includes('+')) {
+                            // '5h+'와 같은 경우, 최소 시간으로 계산
+                            const numericPart = parseFloat(timeText.replace('h+', ''));
+                            if (!isNaN(numericPart)) {
+                                hours = numericPart;
+                            }
+                        }
+                        totalHours += hours;
+                    });
+
+                    const totalStudyTimeSpan = header.querySelector('.total-study-time');
+                    if (totalStudyTimeSpan) {
+                        totalStudyTimeSpan.textContent = `총 ${totalHours}h`;
+                    }
+                });
+            }
+
+            // 페이지 로드 시 총 공부 시간 계산 및 표시
+            calculateAndDisplayTotalStudyTime();
+        });
+    </script>
+
+</body>
+</html>
